@@ -1,0 +1,15 @@
+{
+  "name": "PoliReport",
+  "short_name": "PoliReport",
+  "description": "Reporta y da seguimiento a los problemas del centro educativo",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F1F5F2",
+  "theme_color": "#173B36",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

@@ -1,0 +1,5 @@
+polireport.db
+__pycache__/
+.venv/
+build-android/
+*.apk
