@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE TABLE IF NOT EXISTS lugares (
   id_lugar INTEGER PRIMARY KEY AUTOINCREMENT,
-  nombre TEXT NOT NULL UNIQUE
+  nombre TEXT NOT NULL UNIQUE,
+  grupo TEXT
 );
 
 CREATE TABLE IF NOT EXISTS categorias (
@@ -41,7 +42,9 @@ CREATE TABLE IF NOT EXISTS reportes (
   prioridad TEXT NOT NULL DEFAULT 'Media' CHECK (prioridad IN ('Alta','Media','Baja')),
   fecha TEXT NOT NULL DEFAULT (datetime('now')),
   fecha_resuelto TEXT,
-  foto TEXT
+  foto TEXT,
+  curso TEXT,
+  problema TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_rep_estado ON reportes(id_estado);

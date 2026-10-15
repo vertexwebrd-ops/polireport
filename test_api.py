@@ -57,3 +57,22 @@ con_foto = [r for r in lst if r.get("tiene_foto")]
 assert con_foto and "foto" not in lst[0]
 assert c.get(f"/api/reportes/{con_foto[0]['id_reporte']}").json["foto"].startswith("data:image/")
 print("LISTA LIGERA OK")
+# la sesión persiste (cookie con fecha de expiración)
+c.post("/api/logout")
+r = login("admin@poli.edu", "admin123")
+assert "expires=" in r.headers.get("Set-Cookie", "").lower(), r.headers.get("Set-Cookie")
+print("SESION PERSISTENTE OK")
+# catálogo del centro
+cat = c.get("/api/catalogos").json
+assert any(l["nombre"] == "5.º de Enfermería" and l["grupo"] == "Enfermería" for l in cat["lugares"])
+assert [k["nombre"] for k in cat["categorias"]][:3] == ["Electricidad", "Agua y plomería", "Mobiliario"]
+assert "Fugas de agua" in cat["problemas"]["Agua y plomería"]
+c.post("/api/logout"); login("estudiante@poli.edu", "demo123")
+ok = c.post("/api/reportes", json={"descripcion": "No enciende", "id_lugar": 8, "id_categoria": 6,
+            "problema": "Computadoras que no funcionan", "curso": "5to Informática A", "prioridad": "Alta"})
+assert ok.status_code == 201, ok.json
+det = c.get(f"/api/reportes/{ok.json['id_reporte']}").json
+assert det["problema"] == "Computadoras que no funcionan" and det["curso"] == "5to Informática A" and det["grupo"]
+bad = c.post("/api/reportes", json={"descripcion": "No enciende", "id_lugar": 8, "id_categoria": 1, "problema": "Fugas de agua"})
+assert bad.status_code == 400
+print("CATALOGO OK")

@@ -188,6 +188,19 @@ dt{color:var(--muted);font-size:.9rem} dd{margin:0;font-weight:600}
 .seg2 button{border:0;background:none;padding:10px;border-radius:11px;font-weight:700;color:var(--muted)}
 .seg2 button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(10,30,26,.12)}
 
+.picker{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:11px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--surface)}
+.pk-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.pk-txt{flex:1;min-width:0}.pk-txt b{display:block;line-height:1.2}.pk-txt small{color:var(--muted)}
+.picker>.i:last-child{color:var(--muted)}
+.picker-sheet{z-index:12;padding-top:0}
+.pk-head{position:sticky;top:0;z-index:1;background:var(--bg);padding:calc(var(--safe-t) + 6px) 0 12px}
+.pk-head h1{font-size:1.45rem;margin:2px 0 12px}
+.grp{display:flex;justify-content:space-between;align-items:baseline;font-size:1rem;margin:22px 0 8px;color:var(--accent)}
+.grp span{font-family:var(--f-body);font-size:.8rem;color:var(--muted);font-weight:600}
+.rows{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row.long{grid-column:1/-1}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-weight:600;font-size:.94rem;line-height:1.25}
+.row.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .toast{position:fixed;left:50%;bottom:calc(104px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:12px 20px;border-radius:99px;font-weight:700;z-index:20;max-width:90%;text-align:center}
 </style>
@@ -195,12 +208,13 @@ dt{color:var(--muted);font-size:.9rem} dd{margin:0;font-weight:600}
 <body>
 <div id="app"></div>
 <div id="overlay"></div>
+<div id="picker"></div>
 <div id="toast"></div>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const state = {user:null, cat:null, tab:"reportes", f:{estado:"",prioridad:"",q:""}, all:[], stats:null, historial:[], foto:null, authMode:"login", loading:false, detalle:null};
+const state = {user:null, cat:null, tab:"reportes", f:{estado:"",prioridad:"",q:""}, all:[], stats:null, historial:[], foto:null, authMode:"login", loading:false, detalle:null, areaSel:null};
 
 /* ---------- íconos ---------- */
 const svg = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
@@ -218,8 +232,14 @@ const I = {
   drop: svg('<path d="M12 3s6 6.5 6 11a6 6 0 11-12 0c0-4.5 6-11 6-11z"/>'),
   alert: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>'),
   check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
+  map: svg('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>'),
+  chev: svg('<path d="M9 5l7 7-7 7"/>'),
+  pin: svg('<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+  building: svg('<path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 9h5a1 1 0 011 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/>'),
+  trash: svg('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  snow: svg('<path d="M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9"/>'),
 };
-const CAT = {"electricidad":I.bolt, "tecnología":I.monitor, "mobiliario":I.chair, "baños":I.drop};
+const CAT = {"electricidad":I.bolt, "agua y plomería":I.drop, "mobiliario":I.chair, "infraestructura":I.building, "limpieza":I.trash, "tecnología":I.monitor, "climatización":I.snow};
 const catIcon = n => CAT[(n || "").toLowerCase()] || I.alert;
 
 /* ---------- utilidades ---------- */
@@ -259,11 +279,12 @@ function render() {
   const app = $("#app");
   if (!state.user) return renderAuth(app);
   const tabs = [["reportes","Reportes",I.list]];
-  if (state.user.rol === "admin") tabs.push(["panel","Panel",I.chart]);
+  tabs.push(["mapa","Mapa",I.map]);
   if (puedeReportar()) tabs.push(["nuevo","Reportar",I.plus,true]);
+  if (state.user.rol === "admin") tabs.push(["panel","Panel",I.chart]);
   tabs.push(["cuenta","Cuenta",I.user]);
   if (!tabs.some(t => t[0] === state.tab)) state.tab = "reportes";
-  const views = {reportes:viewReportes, nuevo:viewNuevo, panel:viewPanel, cuenta:viewCuenta};
+  const views = {reportes:viewReportes, mapa:viewMapa, nuevo:viewNuevo, panel:viewPanel, cuenta:viewCuenta};
   app.innerHTML = views[state.tab]() + `<nav class="tabs" aria-label="Principal"><div class="in">` +
     tabs.map(([k,l,i,fab]) => `<button data-tab="${k}" class="${fab ? "fab" : ""}" ${state.tab === k ? 'aria-current="page"' : ""}><span class="pillbg">${i}</span>${l}</button>`).join("") +
     `</div></nav>`;
@@ -305,7 +326,7 @@ function viewReportes() {
 function filtrados() {
   const {estado, prioridad, q} = state.f, t = q.toLowerCase();
   return state.all.filter(r => (!estado || r.id_estado === +estado) && (!prioridad || r.prioridad === prioridad) &&
-    (!t || (r.descripcion + " " + r.lugar + " " + r.categoria).toLowerCase().includes(t)));
+    (!t || (r.descripcion + " " + r.lugar + " " + r.categoria + " " + (r.problema || "")).toLowerCase().includes(t)));
 }
 function listaHTML() {
   const rs = filtrados();
@@ -339,22 +360,53 @@ const radios = (name, items, key, label) => `<div class="opts" role="radiogroup"
 const fotoBox = () => state.foto
   ? `<img src="${state.foto}" alt="Vista previa de la foto"><small>Toca para cambiar la foto</small>`
   : `${I.camera}<b>Tomar o elegir una foto</b><small>Ayuda a resolverlo más rápido (opcional)</small>`;
+const areaBtn = () => { const a = state.areaSel;
+  return `<span class="pk-ico">${I.pin}</span><span class="pk-txt"><b>${a ? esc(a.nombre) : "Elegir el área"}</b><small>${a ? esc(a.grupo || "") : "Aula, taller, baño u otra zona"}</small></span>${I.chev}`; };
+function probChips(catId) {
+  const cat = state.cat.categorias.find(k => String(k.id_categoria) === String(catId));
+  const lista = cat ? (state.cat.problemas[cat.nombre] || []) : [];
+  if (!lista.length) return "";
+  return `<span class="lbl">¿Cuál es el problema?</span><div class="opts" role="radiogroup">` +
+    [...lista.map(x => [x, x]), ["", "Otro"]].map(([v, l], i, arr) =>
+      `<label class="opt"><input type="radio" name="problema" value="${esc(v)}" ${i === arr.length - 1 ? "checked" : ""}><span>${esc(l)}</span></label>`).join("") + `</div>`;
+}
 function viewNuevo() {
-  const c = state.cat;
+  const c = state.cat; let curso = ""; try { curso = localStorage.getItem("pr_curso") || ""; } catch {}
   return cabecera("Nuevo reporte", "Cuéntanos qué está dañado y dónde.") + `<main class="body">
   <form id="nuevoForm" novalidate>
     <div class="field"><span class="lbl">Foto</span>
       <label class="drop" for="foto" id="fotoBox">${fotoBox()}</label>
       <input class="vh" id="foto" type="file" accept="image/*" capture="environment"></div>
-    <label class="field"><span class="lbl">¿Qué pasó?</span><textarea name="descripcion" placeholder="Ej: El abanico del fondo no gira" required></textarea></label>
-    <div class="field"><span class="lbl">¿Dónde está?</span>${radios("id_lugar", c.lugares, "id_lugar", l => esc(l.nombre))}</div>
+    <div class="field"><span class="lbl">¿Dónde está?</span>
+      <button type="button" class="picker" id="areaBtn" data-act="pick-area">${areaBtn()}</button>
+      <input type="hidden" name="id_lugar" value="${state.areaSel ? state.areaSel.id : ""}"></div>
     <div class="field"><span class="lbl">Tipo de problema</span>${radios("id_categoria", c.categorias, "id_categoria", k => catIcon(k.nombre) + esc(k.nombre))}</div>
-    <div class="field"><span class="lbl">¿Qué tan urgente es?</span><div class="urg">${[["Alta","Hay riesgo o no se puede dar clase"],["Media","Molesta, pero se puede seguir"],["Baja","Es un problema menor"]].map(([p,t]) =>
+    <div class="field" id="probBox"></div>
+    <div class="field"><span class="lbl">¿Qué tan urgente es?</span><div class="urg">${[["Alta","Necesita atención urgente"],["Media","Debe atenderse pronto"],["Baja","Puede esperar"]].map(([p,t]) =>
       `<label class="u ${p}"><input type="radio" name="prioridad" value="${p}" ${p === "Media" ? "checked" : ""}><span><span><b>${p}</b><small>${t}</small></span></span></label>`).join("")}</div></div>
+    <label class="field"><span class="lbl">Descripción</span><textarea name="descripcion" placeholder="Ej: La computadora no enciende" required></textarea></label>
+    <label class="field"><span class="lbl">Tu curso (opcional)</span><input name="curso" value="${esc(curso)}" placeholder="Ej: 5to Informática A" autocomplete="off" maxlength="60"></label>
     <div class="err" id="nErr" role="alert"></div>
     <button class="btn">Enviar reporte</button>
   </form></main>`;
 }
+function areaLista(q) {
+  const t = q.toLowerCase(), sel = state.areaSel && state.areaSel.id, gr = {};
+  state.cat.lugares.filter(l => !t || (l.nombre + " " + (l.grupo || "")).toLowerCase().includes(t))
+    .forEach(l => { const k = l.grupo || "Otras áreas"; (gr[k] = gr[k] || []).push(l); });
+  const ks = Object.keys(gr);
+  if (!ks.length) return `<div class="empty">No hay áreas con ese nombre.</div>`;
+  return ks.map(k => `<h2 class="grp">${esc(k)}<span>${gr[k].length}</span></h2><div class="rows">${gr[k].map(l =>
+    `<button type="button" class="row ${l.nombre.length > 22 ? "long" : ""} ${l.id_lugar === sel ? "on" : ""}" data-area="${l.id_lugar}">${esc(l.nombre)}${l.id_lugar === sel ? I.check : ""}</button>`).join("")}</div>`).join("");
+}
+function abrirPicker() {
+  $("#picker").innerHTML = `<div class="sheet picker-sheet" role="dialog" aria-modal="true" aria-label="Elegir área"><div class="in">
+    <div class="pk-head"><button class="back" data-act="close-picker" type="button">${I.back}Volver</button><h1>¿Dónde está el problema?</h1>
+      <label class="search">${I.search}<input id="qa" type="search" placeholder="Buscar aula, taller o área" autocomplete="off" aria-label="Buscar área"></label></div>
+    <div id="areaList">${areaLista("")}</div></div></div>`;
+  document.body.style.overflow = "hidden";
+}
+function cerrarPicker() { $("#picker").innerHTML = ""; document.body.style.overflow = ""; }
 function reducirImagen(file, max = 1000) {
   return new Promise((ok, fail) => {
     const img = new Image(), url = URL.createObjectURL(file);
@@ -396,6 +448,13 @@ async function cargarPanel() {
   if (state.tab === "panel" && state.user) render();
 }
 
+/* ---------- mapa (próximamente) ---------- */
+function viewMapa() {
+  return cabecera("Mapa del centro", "Pronto podrás ver en un plano dónde hay problemas.") + `<main class="body">
+    <div class="empty"><span class="ico ok" style="--c:var(--accent)">${I.map}</span><b>Muy pronto</b>
+    Toca un aula, taller o área del plano para ver sus reportes y reportar algo ahí mismo.</div></main>`;
+}
+
 /* ---------- cuenta ---------- */
 function viewCuenta() {
   const u = state.user;
@@ -416,7 +475,7 @@ async function abrirDetalle(id) {
     <h1>${esc(r.descripcion)}</h1>
     <div class="m" style="margin:0 0 4px">${pill(r.id_estado)}<span class="prio ${r.prioridad}">Urgencia ${r.prioridad.toLowerCase()}</span></div>
     <div class="box"><b>Avance</b>${track(r.id_estado)}</div>
-    <div class="box"><dl><dt>Lugar</dt><dd>${esc(r.lugar)}</dd><dt>Tipo</dt><dd>${esc(r.categoria)}</dd>
+    <div class="box"><dl><dt>Área</dt><dd>${esc(r.lugar)}</dd><dt>Tipo</dt><dd>${esc(r.categoria)}</dd>${r.problema ? `<dt>Problema</dt><dd>${esc(r.problema)}</dd>` : ""}${r.curso ? `<dt>Curso</dt><dd>${esc(r.curso)}</dd>` : ""}
       <dt>Reportado por</dt><dd>${esc(r.autor)}, ${fmt(r.fecha)}</dd>
       <dt>Encargado</dt><dd>${esc(r.encargado || "Sin asignar")}</dd>
       ${r.fecha_resuelto ? `<dt>Resuelto</dt><dd>${fmt(r.fecha_resuelto)}</dd>` : ""}</dl></div>
@@ -437,25 +496,36 @@ function irA(tab) {
   if (tab === "panel") cargarPanel();
 }
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-est],[data-act]"); if (!t) return;
+  const t = e.target.closest("[data-tab],[data-open],[data-est],[data-area],[data-act]"); if (!t) return;
   if (t.dataset.tab) return irA(t.dataset.tab);
   if (t.dataset.open) return abrirDetalle(t.dataset.open);
+  if (t.dataset.area) {
+    const l = state.cat.lugares.find(x => String(x.id_lugar) === t.dataset.area);
+    state.areaSel = {id: l.id_lugar, nombre: l.nombre, grupo: l.grupo};
+    const h = document.querySelector("[name=id_lugar]"); if (h) h.value = l.id_lugar;
+    const b = $("#areaBtn"); if (b) b.innerHTML = areaBtn();
+    return cerrarPicker();
+  }
   if (t.dataset.est) { state.f.estado = String(state.f.estado) === t.dataset.est ? "" : t.dataset.est; return refreshList(); }
   switch (t.dataset.act) {
     case "auth-login": case "auth-registro": state.authMode = t.dataset.act.slice(5); return render();
     case "close": return cerrarDetalle();
+    case "pick-area": return abrirPicker();
+    case "close-picker": return cerrarPicker();
     case "clear": state.f = {estado:"", prioridad:"", q:""}; return render();
     case "nuevo": return irA("nuevo");
     case "logout":
       try { await api("/logout", {method:"POST"}); } catch {}
-      Object.assign(state, {user:null, all:[], stats:null, historial:[], f:{estado:"",prioridad:"",q:""}, foto:null});
+      Object.assign(state, {areaSel:null, user:null, all:[], stats:null, historial:[], f:{estado:"",prioridad:"",q:""}, foto:null});
       return render();
   }
 });
 document.addEventListener("input", e => {
+  if (e.target.id === "qa") $("#areaList").innerHTML = areaLista(e.target.value.trim());
   if (e.target.id === "q") { clearTimeout(e.target.t); e.target.t = setTimeout(() => { state.f.q = e.target.value.trim(); refreshList(); }, 150); }
 });
 document.addEventListener("change", async e => {
+  if (e.target.name === "id_categoria") $("#probBox").innerHTML = probChips(e.target.value);
   if (e.target.id === "fp") { state.f.prioridad = e.target.value; refreshList(); }
   if (e.target.id === "foto" && e.target.files[0]) {
     try { state.foto = await reducirImagen(e.target.files[0]); $("#fotoBox").innerHTML = fotoBox(); } catch (x) { toast(x.message); }
@@ -476,8 +546,9 @@ document.addEventListener("submit", async e => {
     if (!d.id_categoria) return er.textContent = "Elige el tipo de problema.";
     btn.disabled = true;
     try {
-      await api("/reportes", {method:"POST", body:{descripcion:d.descripcion, id_lugar:+d.id_lugar, id_categoria:+d.id_categoria, prioridad:d.prioridad, foto:state.foto}});
-      state.foto = null; state.f = {estado:"",prioridad:"",q:""}; toast("Reporte enviado"); irA("reportes");
+      await api("/reportes", {method:"POST", body:{descripcion:d.descripcion, id_lugar:+d.id_lugar, id_categoria:+d.id_categoria, prioridad:d.prioridad, foto:state.foto, problema:d.problema || null, curso:(d.curso || "").trim() || null}});
+      try { localStorage.setItem("pr_curso", (d.curso || "").trim()); } catch {}
+      state.foto = null; state.areaSel = null; state.f = {estado:"",prioridad:"",q:""}; toast("Reporte enviado"); irA("reportes");
     } catch (x) { er.textContent = x.message; btn.disabled = false; }
   }
   if (f.id === "editForm") {

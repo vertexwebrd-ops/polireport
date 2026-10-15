@@ -51,6 +51,38 @@ def close_db(e=None):
         db.close()
 
 
+def add_column(db, tabla, col, tipo):
+    if db.pg:
+        db.execute(f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS {col} {tipo}")
+    else:
+        if col not in [r["name"] for r in db.execute(f"PRAGMA table_info({tabla})")]:
+            db.execute(f"ALTER TABLE {tabla} ADD COLUMN {col} {tipo}")
+
+
+def sync_catalogos(db):
+    """Deja áreas y categorías como en catalogo.py (sirve para bases nuevas y ya existentes)."""
+    from catalogo import (GRUPOS, CATEGORIAS, RENOMBRAR_CATEGORIAS, RENOMBRAR_LUGARES, LUGARES_VIEJOS)
+    existe = lambda t, n: db.execute(f"SELECT 1 FROM {t} WHERE nombre=?", (n,)).fetchone()
+    for viejo, nuevo in RENOMBRAR_CATEGORIAS.items():
+        if existe("categorias", viejo) and not existe("categorias", nuevo):
+            db.execute("UPDATE categorias SET nombre=? WHERE nombre=?", (nuevo, viejo))
+    for n in CATEGORIAS:
+        if not existe("categorias", n):
+            db.execute("INSERT INTO categorias(nombre) VALUES (?)", (n,))
+    for viejo, nuevo in RENOMBRAR_LUGARES.items():
+        if existe("lugares", viejo) and not existe("lugares", nuevo):
+            db.execute("UPDATE lugares SET nombre=? WHERE nombre=?", (nuevo, viejo))
+    for grupo, nombres in GRUPOS:
+        for n in nombres:
+            if existe("lugares", n):
+                db.execute("UPDATE lugares SET grupo=? WHERE nombre=?", (grupo, n))
+            else:
+                db.execute("INSERT INTO lugares(nombre, grupo) VALUES (?,?)", (n, grupo))
+    for n in LUGARES_VIEJOS:
+        db.execute("DELETE FROM lugares WHERE nombre=? AND id_lugar NOT IN (SELECT id_lugar FROM reportes)", (n,))
+    db.commit()
+
+
 def init_db(app):
     from werkzeug.security import generate_password_hash as h
     db = connect(app)
@@ -63,15 +95,14 @@ def init_db(app):
         db.con.cursor().execute(sql)
     else:
         db.con.executescript(sql)
+    add_column(db, "lugares", "grupo", "TEXT")
+    add_column(db, "reportes", "curso", "TEXT")
+    add_column(db, "reportes", "problema", "TEXT")
     db.commit()
 
     if db.execute("SELECT COUNT(*) AS n FROM estados").fetchone()["n"] == 0:
         for n in ("Pendiente", "En revisión", "Resuelto"):
             db.execute("INSERT INTO estados(nombre) VALUES (?)", (n,))
-        for n in ("Electricidad", "Tecnología", "Mobiliario", "Baños", "Otros"):
-            db.execute("INSERT INTO categorias(nombre) VALUES (?)", (n,))
-        for n in ("Aula 4to Informática", "Aula 2do Comercio", "Laboratorio", "Pasillo", "Baños", "Dirección", "Patio"):
-            db.execute("INSERT INTO lugares(nombre) VALUES (?)", (n,))
         for n, e in (("Juan Pérez", "Electricidad"), ("María Gómez", "Tecnología")):
             db.execute("INSERT INTO encargados(nombre, especialidad) VALUES (?,?)", (n, e))
         admin_pw = os.environ.get("ADMIN_PASSWORD", "admin123")
@@ -84,4 +115,5 @@ def init_db(app):
             db.execute("INSERT INTO usuarios(nombre, correo, password_hash, rol, id_encargado) VALUES (?,?,?,?,?)",
                        (nombre, correo, h(pw), rol, enc))
         db.commit()
+    sync_catalogos(db)
     db.close()

@@ -1,7 +1,9 @@
 import os
+from datetime import timedelta
 from functools import wraps
 from flask import Flask, request, session, jsonify, g, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
+from catalogo import PROBLEMAS
 from db import get_db, close_db, init_db, now_sql
 
 app = Flask(__name__)
@@ -10,6 +12,7 @@ if app.config["DATABASE_URL"] and not os.environ.get("SECRET_KEY"):
     raise RuntimeError("Define la variable de entorno SECRET_KEY en producción")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-cambiar-en-produccion")
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE") == "1"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=90)  # la sesión dura 90 días en el teléfono
 app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 app.config["DATABASE"] = os.environ.get("DATABASE", os.path.join(os.path.dirname(__file__), "polireport.db"))
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -58,7 +61,7 @@ def login_required(*roles):
 
 BASE_SQL = """
 SELECT r.id_reporte, r.descripcion, r.prioridad, r.fecha, r.fecha_resuelto, r.foto,
-       r.id_lugar, l.nombre AS lugar, r.id_categoria, c.nombre AS categoria,
+       r.id_lugar, l.nombre AS lugar, l.grupo, r.curso, r.problema, r.id_categoria, c.nombre AS categoria,
        r.id_estado, e.nombre AS estado, r.id_usuario, u.nombre AS autor,
        r.id_encargado, en.nombre AS encargado
 FROM reportes r
@@ -84,6 +87,7 @@ def login():
     u = get_db().execute("SELECT * FROM usuarios WHERE correo=?", ((d.get("correo") or "").strip().lower(),)).fetchone()
     if not u or not check_password_hash(u["password_hash"], d.get("password") or ""):
         return err("Correo o contraseña incorrectos", 401)
+    session.permanent = True
     session["uid"] = u["id_usuario"]
     return jsonify(id=u["id_usuario"], nombre=u["nombre"], rol=u["rol"])
 
@@ -103,6 +107,7 @@ def registro():
                      (nombre, correo, generate_password_hash(pw), rol))
     uid = cur.fetchone()["id_usuario"]
     db.commit()
+    session.permanent = True
     session["uid"] = uid
     return jsonify(id=uid, nombre=nombre, rol=rol), 201
 
@@ -122,9 +127,9 @@ def yo():
 @login_required()
 def catalogos():
     db = get_db()
-    q = lambda t: [dict(r) for r in db.execute(f"SELECT * FROM {t}")]
-    return jsonify(lugares=q("lugares"), categorias=q("categorias"), estados=q("estados"),
-                   encargados=q("encargados"), prioridades=list(PRIORIDADES))
+    q = lambda t, o: [dict(r) for r in db.execute(f"SELECT * FROM {t} ORDER BY {o}")]
+    return jsonify(lugares=q("lugares", "id_lugar"), categorias=q("categorias", "id_categoria"), estados=q("estados", "id_estado"),
+                   encargados=q("encargados", "id_encargado"), prioridades=list(PRIORIDADES), problemas=PROBLEMAS)
 
 # ---------- reportes ----------
 @app.post("/api/reportes")
@@ -139,11 +144,17 @@ def crear_reporte():
     for tabla, campo in (("lugares", "id_lugar"), ("categorias", "id_categoria")):
         if to_int(d.get(campo)) is None or not db.execute(f"SELECT 1 FROM {tabla} WHERE {campo}=?", (to_int(d.get(campo)),)).fetchone():
             return err(f"{campo} inválido")
+    curso = (d.get("curso") or "").strip()[:60] or None
+    problema = (d.get("problema") or "").strip() or None
+    if problema:
+        cat = db.execute("SELECT nombre FROM categorias WHERE id_categoria=?", (to_int(d["id_categoria"]),)).fetchone()
+        if problema not in PROBLEMAS.get(cat["nombre"], []):
+            return err("Problemática inválida para ese tipo de problema")
     foto = d.get("foto")
     if foto and not (isinstance(foto, str) and foto.startswith("data:image/") and len(foto) < 2_000_000):
         return err("Foto inválida o demasiado grande")
-    cur = db.execute("INSERT INTO reportes(descripcion,id_lugar,id_categoria,id_usuario,prioridad,foto) VALUES (?,?,?,?,?,?) RETURNING id_reporte",
-                     (desc, to_int(d["id_lugar"]), to_int(d["id_categoria"]), g.user["id_usuario"], prio, foto or None))
+    cur = db.execute("INSERT INTO reportes(descripcion,id_lugar,id_categoria,id_usuario,prioridad,foto,curso,problema) VALUES (?,?,?,?,?,?,?,?) RETURNING id_reporte",
+                     (desc, to_int(d["id_lugar"]), to_int(d["id_categoria"]), g.user["id_usuario"], prio, foto or None, curso, problema))
     rid = cur.fetchone()["id_reporte"]
     db.commit()
     return jsonify(id_reporte=rid), 201
