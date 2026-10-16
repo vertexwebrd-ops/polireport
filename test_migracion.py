@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash as h
 path = os.path.join(tempfile.mkdtemp(), "old.db")
 con = sqlite3.connect(path)
 con.executescript(open("schema.sql", encoding="utf-8").read()
-    .replace(",\n  grupo TEXT", "").replace(",\n  curso TEXT,\n  problema TEXT", ""))  # esquema viejo
+    .replace(",\n  grupo TEXT", "").replace(",\n  foto_despues TEXT,\n  curso TEXT,\n  problema TEXT", ""))  # esquema viejo
 con.executemany("INSERT INTO estados(nombre) VALUES (?)", [("Pendiente",), ("En revisión",), ("Resuelto",)])
 con.executemany("INSERT INTO categorias(nombre) VALUES (?)", [("Electricidad",), ("Tecnología",), ("Mobiliario",), ("Baños",), ("Otros",)])
 con.executemany("INSERT INTO lugares(nombre) VALUES (?)", [("Aula 4to Informática",), ("Aula 2do Comercio",), ("Laboratorio",), ("Pasillo",), ("Baños",), ("Dirección",), ("Patio",)])

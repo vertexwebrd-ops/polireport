@@ -1,4 +1,4 @@
-const CACHE = "polireport-v2";
+const CACHE = "polireport-v3";
 const SHELL = ["/", "/static/manifest.webmanifest", "/static/icon-192.png", "/static/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener("activate", e => {

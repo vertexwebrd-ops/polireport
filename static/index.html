@@ -201,6 +201,49 @@ dt{color:var(--muted);font-size:.9rem} dd{margin:0;font-weight:600}
 .row.long{grid-column:1/-1}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);font-weight:600;font-size:.94rem;line-height:1.25}
 .row.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.top .in{position:relative}
+.top h1{padding-right:54px}
+.bell{position:absolute;right:0;top:-2px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
+.badge2{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--sun);color:var(--sun-ink);font-size:.72rem;font-weight:800;display:grid;place-items:center;border:2px solid var(--pizarra)}
+.banner{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;padding:11px 14px;border-radius:14px;background:color-mix(in srgb,var(--sun) 30%,var(--surface));font-weight:600;font-size:.92rem}
+.banner.off{background:color-mix(in srgb,var(--alta) 14%,var(--surface))}
+.banner .link{background:none;border:0;color:var(--accent);font-weight:800;padding:2px 0;white-space:nowrap}
+.sim{margin:0 0 18px;padding:14px;border-radius:18px;background:color-mix(in srgb,var(--sun) 22%,var(--surface));border:1px solid color-mix(in srgb,var(--sun) 55%,var(--line))}
+.sim p{margin:2px 0 10px;font-size:.9rem}
+.sim-item{padding:10px 0;border-top:1px solid color-mix(in srgb,var(--sun) 40%,var(--line))}
+.sim-item .t2{font-weight:700;line-height:1.3}
+.extra{z-index:11}
+.aviso{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;padding:13px;border:1px solid var(--line);border-radius:16px;background:var(--surface);margin-bottom:8px}
+.aviso .dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:transparent}
+.aviso.nuevo{border-color:var(--accent);background:var(--accent-soft)}
+.aviso.nuevo .dot{background:var(--accent)}
+.aviso small{display:block;color:var(--muted);margin-top:2px}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 14px}
+.ba figure{margin:0}.ba img{width:100%;height:170px;object-fit:cover;border-radius:16px;display:block}
+.ba figcaption{font-size:.8rem;font-weight:700;color:var(--muted);margin-top:4px;text-align:center}
+.tl{list-style:none;margin:10px 0 0;padding:0}
+.tl li{position:relative;padding:0 0 16px 38px}
+.tl li::before{content:"";position:absolute;left:13px;top:26px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .pt{position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tl .pt .i{width:16px;height:16px}
+.tl b{display:block;font-size:.92rem;line-height:1.3}
+.tl small{color:var(--muted)}
+.bub{margin-top:4px;padding:10px 12px;border-radius:14px;background:var(--bg);border:1px solid var(--line);white-space:pre-wrap}
+.comentar{display:flex;gap:8px;align-items:flex-end;margin-top:6px}
+.comentar textarea{min-height:46px;height:46px;border-radius:14px;padding:11px 14px}
+.comentar .btn{width:auto;padding:13px 16px}
+.drop.mini{min-height:96px}
+.kpi.wide{grid-column:span 3;display:flex;justify-content:space-between;align-items:center}
+.kpi.wide b{display:inline;font-size:1.5rem}
+.exp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.exp .field{margin:0;min-width:0}
+.exp input{min-width:0;max-width:100%}
+.badge2[hidden]{display:none}
+.acts{display:flex;flex-direction:column;gap:2px;align-items:flex-end}
+.acts .link,.del{background:none;border:0;font-weight:700;color:var(--accent);padding:4px 0}
+.acts .del{color:var(--alta)}
+.card.nohover:active{transform:none}
 .toast{position:fixed;left:50%;bottom:calc(104px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:12px 20px;border-radius:99px;font-weight:700;z-index:20;max-width:90%;text-align:center}
 </style>
@@ -208,13 +251,16 @@ dt{color:var(--muted);font-size:.9rem} dd{margin:0;font-weight:600}
 <body>
 <div id="app"></div>
 <div id="overlay"></div>
+<div id="extra"></div>
 <div id="picker"></div>
 <div id="toast"></div>
 
 <script>
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const state = {user:null, cat:null, tab:"reportes", f:{estado:"",prioridad:"",q:""}, all:[], stats:null, historial:[], foto:null, authMode:"login", loading:false, detalle:null, areaSel:null};
+const state = {user:null, cat:null, tab:"reportes", f:{estado:"",prioridad:"",q:""}, all:[], stats:null, historial:[], foto:null, authMode:"login", loading:false, detalle:null, areaSel:null, avisos:{no_leidos:0, items:[]}, offline:false, sim:[], fotoDespues:null, gest:null};
+const LS = {get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }};
+const cola = () => LS.get("pr_cola", []);
 
 /* ---------- íconos ---------- */
 const svg = d => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
@@ -233,6 +279,8 @@ const I = {
   alert: svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>'),
   check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   map: svg('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>'),
+  bell: svg('<path d="M6 8a6 6 0 1112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/>'),
+  chat: svg('<path d="M21 12a8 8 0 01-11.5 7.2L4 21l1.8-5.5A8 8 0 1121 12z"/>'),
   chev: svg('<path d="M9 5l7 7-7 7"/>'),
   pin: svg('<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
   building: svg('<path d="M4 21V5a1 1 0 011-1h8a1 1 0 011 1v16M14 9h5a1 1 0 011 1v11M3 21h18M8 8h2M8 12h2M8 16h2"/>'),
@@ -244,11 +292,15 @@ const catIcon = n => CAT[(n || "").toLowerCase()] || I.alert;
 
 /* ---------- utilidades ---------- */
 async function api(path, opts = {}) {
-  const r = await fetch("/api" + path, {
-    method: opts.method || "GET", credentials: "same-origin",
-    headers: opts.body ? {"Content-Type":"application/json"} : {},
-    body: opts.body ? JSON.stringify(opts.body) : undefined
-  });
+  let r;
+  try {
+    r = await fetch("/api" + path, {
+      method: opts.method || "GET", credentials: "same-origin",
+      headers: opts.body ? {"Content-Type":"application/json"} : {},
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+  } catch { state.offline = true; refreshBanner(); const e = new Error("Sin conexión"); e.offline = true; throw e; }
+  if (state.offline) { state.offline = false; refreshBanner(); setTimeout(enviarCola, 300); }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
     if (r.status === 401 && state.user) { state.user = null; render(); }
@@ -260,6 +312,8 @@ function toast(msg) {
   const t = $("#toast"); t.innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`;
   clearTimeout(toast.t); toast.t = setTimeout(() => t.innerHTML = "", 2600);
 }
+const fmtHora = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleString("es-DO", {day:"numeric", month:"short", hour:"numeric", minute:"2-digit"}) : "";
+const fmtDur = h => h == null ? "-" : h < 24 ? h.toFixed(1) + " h" : (h / 24).toFixed(1) + " días";
 const fmt = s => s ? new Date(s.replace(" ", "T") + "Z").toLocaleDateString("es-DO", {day:"numeric", month:"short"}) : "";
 const primer = n => (n || "").trim().split(/\s+/)[0] || "";
 const iniciales = n => (n || "").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -272,7 +326,7 @@ function track(id) {
   return `<ol class="track ${id === 3 ? "fin" : ""}" aria-label="Estado del reporte">` +
     [1,2,3].map(n => `<li class="${n < id ? "done" : n === id ? "now" : ""}"><span></span>${ESTADO[n][0]}</li>`).join("") + `</ol>`;
 }
-const cabecera = (titulo, sub, extra = "") => `<header class="top"><div class="in"><h1>${titulo}</h1>${sub ? `<p>${sub}</p>` : ""}${extra}</div></header>`;
+const cabecera = (titulo, sub, extra = "") => `<header class="top"><div class="in"><button class="bell" data-act="avisos" aria-label="Avisos">${I.bell}<b class="badge2" id="bellN" hidden>0</b></button><h1>${titulo}</h1>${sub ? `<p>${sub}</p>` : ""}${extra}</div></header>`;
 
 /* ---------- pantalla principal ---------- */
 function render() {
@@ -289,6 +343,7 @@ function render() {
     tabs.map(([k,l,i,fab]) => `<button data-tab="${k}" class="${fab ? "fab" : ""}" ${state.tab === k ? 'aria-current="page"' : ""}><span class="pillbg">${i}</span>${l}</button>`).join("") +
     `</div></nav>`;
   window.scrollTo(0, 0);
+  actualizarBell();
 }
 
 /* ---------- acceso ---------- */
@@ -318,6 +373,7 @@ function viewReportes() {
   const stats = `<div class="stats">${[1,2,3].map(n =>
     `<button class="stat" data-est="${n}" aria-pressed="${String(state.f.estado) === String(n)}"><b>${c(n)}</b><span>${ESTADO[n][0]}</span></button>`).join("")}</div>`;
   return cabecera(`Hola, ${esc(primer(u.nombre))}`, sub, stats) + `<main class="body">
+    <div id="banner">${bannerHTML()}</div>
     <div class="filters"><label class="search">${I.search}<input id="q" type="search" placeholder="Buscar un reporte" value="${esc(state.f.q)}" aria-label="Buscar"></label>
       <select id="fp" aria-label="Prioridad"><option value="">Urgencia</option>${state.cat.prioridades.map(p =>
         `<option ${state.f.prioridad === p ? "selected" : ""}>${p}</option>`).join("")}</select></div>
@@ -333,7 +389,7 @@ function listaHTML() {
   if (rs.length) return rs.map(r => `<button class="card" data-open="${r.id_reporte}">
       <span class="ico ${r.prioridad}">${catIcon(r.categoria)}</span>
       <span class="txt"><span class="t">${esc(r.descripcion)}</span>
-        <span class="m">${pill(r.id_estado)}<span class="prio ${r.prioridad}">${r.prioridad}</span><span>${esc(r.lugar)}</span><span>${fmt(r.fecha)}</span></span></span></button>`).join("");
+        <span class="m">${pill(r.id_estado)}<span class="prio ${r.prioridad}">${r.prioridad}</span><span>${esc(r.lugar)}</span><span>${fmt(r.fecha)}</span>${r.apoyos ? `<span>+${r.apoyos} más</span>` : ""}</span></span></button>`).join("");
   if (state.loading) return `<div class="empty">Cargando…</div>`;
   if (state.all.length) return `<div class="empty"><b>Nada coincide</b>Prueba con otros filtros.<button class="btn ghost small" data-act="clear">Quitar filtros</button></div>`;
   return `<div class="empty"><span class="ico ok">${I.check}</span><b>Todo en orden por ahora</b>${puedeReportar() ? "Cuando algo se dañe, repórtalo aquí." : "Aún no tienes reportes asignados."}
@@ -347,9 +403,26 @@ function refreshList() {
     b.querySelector("b").textContent = state.all.filter(r => r.id_estado === +b.dataset.est).length;
   });
 }
+function bannerHTML() {
+  const n = cola().length;
+  return (state.offline ? `<div class="banner off">Sin conexión. Se muestra lo último guardado.</div>` : "") +
+    (n ? `<div class="banner"><span>${n === 1 ? "1 reporte guardado sin enviar" : n + " reportes guardados sin enviar"}</span><button class="link" data-act="enviar-cola">Enviar ahora</button></div>` : "");
+}
+function refreshBanner() { const b = $("#banner"); if (b) b.innerHTML = bannerHTML(); }
+async function enviarCola() {
+  let q = cola(), enviados = 0;
+  if (!q.length || !state.user || state.enviando) return;
+  state.enviando = true;
+  for (const it of [...q]) {
+    try { await api("/reportes", {method:"POST", body:it.body}); q = q.filter(x => x.id !== it.id); enviados++; }
+    catch (e) { if (e.offline) break; q = q.filter(x => x.id !== it.id); toast("Un reporte guardado no se pudo enviar: " + e.message); }
+  }
+  LS.set("pr_cola", q); state.enviando = false; refreshBanner();
+  if (enviados) { toast(enviados === 1 ? "Se envió el reporte guardado" : `Se enviaron ${enviados} reportes guardados`); cargarReportes(); }
+}
 async function cargarReportes() {
   state.loading = !state.all.length;
-  try { state.all = await api("/reportes"); } catch (e) { if (state.user) toast(e.message); }
+  try { state.all = await api("/reportes"); LS.set("pr_all", state.all); } catch (e) { if (state.user && !e.offline) toast(e.message); }
   state.loading = false;
   if ($("#lista")) refreshList(); else if (state.user && state.tab === "reportes") render();
 }
@@ -381,6 +454,7 @@ function viewNuevo() {
       <button type="button" class="picker" id="areaBtn" data-act="pick-area">${areaBtn()}</button>
       <input type="hidden" name="id_lugar" value="${state.areaSel ? state.areaSel.id : ""}"></div>
     <div class="field"><span class="lbl">Tipo de problema</span>${radios("id_categoria", c.categorias, "id_categoria", k => catIcon(k.nombre) + esc(k.nombre))}</div>
+    <div id="simBox"></div>
     <div class="field" id="probBox"></div>
     <div class="field"><span class="lbl">¿Qué tan urgente es?</span><div class="urg">${[["Alta","Necesita atención urgente"],["Media","Debe atenderse pronto"],["Baja","Puede esperar"]].map(([p,t]) =>
       `<label class="u ${p}"><input type="radio" name="prioridad" value="${p}" ${p === "Media" ? "checked" : ""}><span><span><b>${p}</b><small>${t}</small></span></span></label>`).join("")}</div></div>
@@ -389,6 +463,18 @@ function viewNuevo() {
     <div class="err" id="nErr" role="alert"></div>
     <button class="btn">Enviar reporte</button>
   </form></main>`;
+}
+const simHTML = () => !state.sim.length ? "" : `<div class="sim"><b>${state.sim.length === 1 ? "Ya hay un reporte parecido" : "Ya hay reportes parecidos"}</b>
+  <p>Si es lo mismo, súmate en vez de repetirlo: así se atiende antes.</p>${state.sim.map(s => `<div class="sim-item">
+  <div class="t2">${esc(s.problema ? s.problema + ": " : "")}${esc(s.descripcion)}</div>
+  <div class="m"><span>${fmt(s.fecha)}</span><span>${s.apoyos ? "+" + s.apoyos + " más" : "Sin apoyos aún"}</span></div>
+  ${s.es_mio ? `<small class="muted">Es tu reporte</small>` : `<button type="button" class="btn small ${s.yo_apoyo ? "ghost" : ""}" style="margin-top:8px" data-apoyo="${s.id_reporte}">${s.yo_apoyo ? "Ya te sumaste (quitar)" : "A mí también me pasa"}</button>`}</div>`).join("")}</div>`;
+async function cargarSimilares() {
+  const f = $("#nuevoForm"), box = $("#simBox"); if (!f || !box) return;
+  const l = f.elements.id_lugar.value, c = (f.querySelector("[name=id_categoria]:checked") || {}).value;
+  if (!l || !c) { state.sim = []; return box.innerHTML = ""; }
+  try { state.sim = await api(`/similares?id_lugar=${l}&id_categoria=${c}`); } catch { state.sim = []; }
+  box.innerHTML = simHTML();
 }
 function areaLista(q) {
   const t = q.toLowerCase(), sel = state.areaSel && state.areaSel.id, gr = {};
@@ -434,6 +520,14 @@ function viewPanel() {
     <div class="kpis"><div class="kpi s1"><b>${by("Pendiente")}</b><small>Pendientes</small></div>
       <div class="kpi s2"><b>${by("En revisión")}</b><small>En revisión</small></div>
       <div class="kpi s3"><b>${by("Resuelto")}</b><small>Resueltos</small></div></div>
+    <div class="kpis" style="margin-top:8px"><div class="kpi wide"><span>Tiempo promedio de solución</span><b>${fmtDur(s.promedio_horas)}</b></div>
+      <div class="kpi wide"><span>Abiertos hace más de 7 días</span><b>${s.atrasados}</b></div></div>
+    <h2>Informe</h2><div class="box" style="margin-top:0"><div class="exp">
+      <label class="field"><span class="lbl">Desde</span><input type="date" id="expDesde"></label>
+      <label class="field"><span class="lbl">Hasta</span><input type="date" id="expHasta"></label></div>
+      <div class="exp"><button class="btn" data-act="exp-xlsx">Excel</button><button class="btn ghost" data-act="exp-pdf">PDF</button></div>
+      <p class="muted" style="margin:10px 0 0;font-size:.85rem">Sin fechas se incluyen todos los reportes.</p></div>
+    <h2>Administrar</h2><div class="exp" style="margin-top:0"><button class="btn ghost" data-act="gest-enc">Encargados</button><button class="btn ghost" data-act="gest-areas">Áreas</button></div>
     <h2>Por lugar</h2>${bars(s.por_lugar)}
     <h2>Por tipo de problema</h2>${bars(s.por_categoria)}
     <h2>Por urgencia</h2>${bars(s.por_prioridad, true)}
@@ -464,16 +558,22 @@ function viewCuenta() {
 }
 
 /* ---------- detalle ---------- */
-function cerrarDetalle() { $("#overlay").innerHTML = ""; document.body.style.overflow = ""; state.detalle = null; }
+function cerrarDetalle() { $("#overlay").innerHTML = ""; document.body.style.overflow = ""; state.detalle = null; state.fotoDespues = null; }
+const fotoDBox = () => state.fotoDespues
+  ? `<img src="${state.fotoDespues}" alt="Vista previa de la foto del arreglo"><small>Toca para cambiar</small>`
+  : `${I.camera}<b>Foto del arreglo</b><small>Opcional</small>`;
+const ICO_EV = {creado:I.plus, estado:I.check, asignado:I.user, prioridad:I.alert, comentario:I.chat, foto:I.camera};
 async function abrirDetalle(id) {
   let r; try { r = await api("/reportes/" + id); } catch (e) { return toast(e.message); }
   const u = state.user, c = state.cat, admin = u.rol === "admin", edita = admin || u.rol === "mantenimiento";
-  state.detalle = {id, admin};
+  const prev = document.querySelector("#overlay .sheet"), scroll = prev && state.detalle && state.detalle.id === id ? prev.scrollTop : 0;
+  state.detalle = {id, admin}; if (!prev) state.fotoDespues = null;
   $("#overlay").innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Detalle del reporte"><div class="in">
     <button class="back" data-act="close">${I.back}Volver</button>
-    ${r.foto ? `<img class="photo" src="${r.foto}" alt="Foto del problema">` : ""}
+    ${r.foto_despues ? `<div class="ba" style="grid-template-columns:${r.foto ? "1fr 1fr" : "1fr"}">${r.foto ? `<figure><img src="${r.foto}" alt="Antes"><figcaption>Antes</figcaption></figure>` : ""}<figure><img src="${r.foto_despues}" alt="Después"><figcaption>Después</figcaption></figure></div>`
+      : r.foto ? `<img class="photo" src="${r.foto}" alt="Foto del problema">` : ""}
     <h1>${esc(r.descripcion)}</h1>
-    <div class="m" style="margin:0 0 4px">${pill(r.id_estado)}<span class="prio ${r.prioridad}">Urgencia ${r.prioridad.toLowerCase()}</span></div>
+    <div class="m" style="margin:0 0 4px">${pill(r.id_estado)}<span class="prio ${r.prioridad}">Urgencia ${r.prioridad.toLowerCase()}</span>${r.apoyos ? `<span>${r.apoyos} ${r.apoyos === 1 ? "persona más reportó" : "personas más reportaron"} lo mismo</span>` : ""}</div>
     <div class="box"><b>Avance</b>${track(r.id_estado)}</div>
     <div class="box"><dl><dt>Área</dt><dd>${esc(r.lugar)}</dd><dt>Tipo</dt><dd>${esc(r.categoria)}</dd>${r.problema ? `<dt>Problema</dt><dd>${esc(r.problema)}</dd>` : ""}${r.curso ? `<dt>Curso</dt><dd>${esc(r.curso)}</dd>` : ""}
       <dt>Reportado por</dt><dd>${esc(r.autor)}, ${fmt(r.fecha)}</dd>
@@ -484,9 +584,91 @@ async function abrirDetalle(id) {
         `<option value="${e.id_encargado}" ${r.id_encargado === e.id_encargado ? "selected" : ""}>${esc(e.nombre)} (${esc(e.especialidad || "")})</option>`).join("")}</select></label>
       <label class="field"><span class="lbl">Urgencia</span><select name="prioridad">${c.prioridades.map(p => `<option ${r.prioridad === p ? "selected" : ""}>${p}</option>`).join("")}</select></label>` : ""}
       <label class="field"><span class="lbl">Estado</span><select name="id_estado">${c.estados.map(e => `<option value="${e.id_estado}" ${r.id_estado === e.id_estado ? "selected" : ""}>${esc(e.nombre)}</option>`).join("")}</select></label>
+      <div class="field"><span class="lbl">Foto del arreglo</span><label class="drop mini" for="fotoDespues" id="fotoDBox">${fotoDBox()}</label>
+        <input class="vh" id="fotoDespues" type="file" accept="image/*" capture="environment"></div>
       <div class="err" id="eErr" role="alert"></div><button class="btn">Guardar cambios</button></form>` : ""}
+    <div class="box"><b>Historial</b><ol class="tl">${r.eventos.map(ev => `<li><span class="pt">${ICO_EV[ev.tipo] || I.check}</span>
+      ${ev.tipo === "comentario" ? `<b>${esc(ev.autor)}</b><div class="bub">${esc(ev.texto)}</div>` : `<b>${esc(ev.texto)}</b>`}
+      <small>${ev.tipo === "comentario" ? "" : esc(ev.autor) + ", "}${fmtHora(ev.fecha)}</small></li>`).join("")}</ol>
+      <form class="comentar" id="comentForm"><textarea name="texto" placeholder="Escribe un comentario" aria-label="Comentario" required></textarea><button class="btn">Enviar</button></form></div>
   </div></div>`;
   document.body.style.overflow = "hidden";
+  if (prev) document.querySelector("#overlay .sheet").style.animation = "none";
+  if (scroll) document.querySelector("#overlay .sheet").scrollTop = scroll;
+}
+
+/* ---------- avisos ---------- */
+function actualizarBell() {
+  const b = $("#bellN"); if (!b) return;
+  const n = state.avisos.no_leidos; b.textContent = n > 99 ? "99+" : n; b.hidden = !n;
+}
+async function cargarAvisos() { try { state.avisos = await api("/avisos"); actualizarBell(); } catch {} }
+async function sondeo() {
+  if (document.hidden || !state.user || state.offline) return;
+  try {
+    const r = await api("/avisos/conteo");
+    if (r.no_leidos > state.avisos.no_leidos) { toast("Tienes un aviso nuevo"); if (state.tab === "reportes" && !state.detalle) cargarReportes(); }
+    state.avisos.no_leidos = r.no_leidos; actualizarBell();
+  } catch {}
+}
+async function abrirAvisos() {
+  try { state.avisos = await api("/avisos"); } catch (e) { return toast(e.message); }
+  actualizarBell();
+  const it = state.avisos.items;
+  $("#extra").innerHTML = `<div class="sheet extra" role="dialog" aria-modal="true" aria-label="Avisos"><div class="in">
+    <button class="back" data-act="close-extra">${I.back}Volver</button><h1>Avisos</h1>
+    ${state.avisos.no_leidos ? `<button class="btn ghost small" data-act="leer-todo" style="margin:10px 0 4px">Marcar todo como leído</button>` : ""}
+    <div style="margin-top:14px">${it.length ? it.map(a => `<button class="aviso ${a.leido ? "" : "nuevo"}" data-aviso="${a.id_aviso}" data-rep="${a.id_reporte || ""}"><span class="dot"></span><span class="txt">${esc(a.texto)}<small>${fmtHora(a.fecha)}</small></span></button>`).join("")
+      : `<div class="empty"><span class="ico ok">${I.bell}</span><b>Sin avisos</b>Aquí verás cuando cambie el estado de tus reportes.</div>`}</div></div></div>`;
+  document.body.style.overflow = "hidden";
+}
+function cerrarExtra() { $("#extra").innerHTML = ""; document.body.style.overflow = ""; state.gest = null; }
+
+/* ---------- administrar encargados y áreas ---------- */
+async function refrescarCatalogo() { state.cat = await api("/catalogos"); LS.set("pr_cache", {user:state.user, cat:state.cat}); }
+async function gestEnc() {
+  try { state.gest = {tipo:"enc", edit:null, lista: await api("/admin/encargados")}; } catch (e) { return toast(e.message); }
+  pintarGest();
+}
+function gestAreas() { state.gest = {tipo:"areas", edit:null}; pintarGest(); }
+function pintarGest() {
+  const g = state.gest, enc = g.tipo === "enc", ed = g.edit;
+  let form, lista;
+  if (enc) {
+    const x = ed ? g.lista.find(y => y.id_encargado === ed) : null;
+    form = `<form class="box" id="encForm" novalidate><b>${x ? "Editar encargado" : "Agregar encargado"}</b>
+      <label class="field"><span class="lbl">Nombre</span><input name="nombre" value="${esc(x ? x.nombre : "")}" required></label>
+      <label class="field"><span class="lbl">Especialidad</span><input name="especialidad" value="${esc(x ? x.especialidad || "" : "")}" placeholder="Ej: Electricidad"></label>
+      ${x ? (x.correo ? `<label class="field"><span class="lbl">Nueva contraseña (opcional)</span><input name="password" type="password" autocomplete="new-password"></label>` : "")
+        : `<label class="field"><span class="lbl">Correo para entrar a la app (opcional)</span><input name="correo" type="email" autocomplete="off"></label>
+           <label class="field"><span class="lbl">Contraseña (mín. 6)</span><input name="password" type="password" autocomplete="new-password"></label>`}
+      <div class="err" id="gErr" role="alert"></div><button class="btn">${x ? "Guardar" : "Agregar"}</button>
+      ${x ? `<button type="button" class="btn ghost" style="margin-top:8px" data-act="gest-cancel">Cancelar</button>` : ""}</form>`;
+    lista = g.lista.map(x => `<div class="card nohover"><span class="ico ok">${I.user}</span><span class="txt"><span class="t">${esc(x.nombre)}</span>
+      <span class="m"><span>${esc(x.especialidad || "Sin especialidad")}</span><span>${x.correo ? esc(x.correo) : "Sin acceso a la app"}</span><span>${x.abiertos} abiertos</span></span></span>
+      <span class="acts"><button class="link" data-act="gest-edit" data-id="${x.id_encargado}">Editar</button><button class="del" data-act="gest-del" data-id="${x.id_encargado}">Borrar</button></span></div>`).join("")
+      || `<div class="empty">Aún no hay encargados.</div>`;
+  } else {
+    const x = ed ? state.cat.lugares.find(y => y.id_lugar === ed) : null;
+    const grupos = [...new Set(state.cat.lugares.map(l => l.grupo).filter(Boolean))];
+    form = `<form class="box" id="areaForm" novalidate><b>${x ? "Editar área" : "Agregar área"}</b>
+      <label class="field"><span class="lbl">Nombre</span><input name="nombre" value="${esc(x ? x.nombre : "")}" placeholder="Ej: Biblioteca" required></label>
+      <label class="field"><span class="lbl">Grupo</span><input name="grupo" list="grupos" value="${esc(x ? x.grupo || "" : "")}" placeholder="Ej: Áreas generales"><datalist id="grupos">${grupos.map(v => `<option value="${esc(v)}">`).join("")}</datalist></label>
+      <div class="err" id="gErr" role="alert"></div><button class="btn">${x ? "Guardar" : "Agregar"}</button>
+      ${x ? `<button type="button" class="btn ghost" style="margin-top:8px" data-act="gest-cancel">Cancelar</button>` : ""}</form>`;
+    const gr = {};
+    state.cat.lugares.forEach(l => { const k = l.grupo || "Otras áreas"; (gr[k] = gr[k] || []).push(l); });
+    lista = Object.keys(gr).map(k => `<h2 class="grp">${esc(k)}<span>${gr[k].length}</span></h2>` + gr[k].map(l =>
+      `<div class="card nohover" style="margin-bottom:6px"><span class="txt"><span class="t">${esc(l.nombre)}</span></span><span class="acts" style="flex-direction:row;gap:12px">
+      <button class="link" data-act="gest-edit" data-id="${l.id_lugar}">Editar</button><button class="del" data-act="gest-del" data-id="${l.id_lugar}">Borrar</button></span></div>`).join("")).join("");
+  }
+  const prev = document.querySelector("#extra .sheet");
+  $("#extra").innerHTML = `<div class="sheet extra" role="dialog" aria-modal="true" aria-label="${enc ? "Encargados" : "Áreas"}"><div class="in">
+    <button class="back" data-act="close-extra">${I.back}Volver</button><h1>${enc ? "Encargados" : "Áreas del centro"}</h1>
+    <div style="margin-top:10px">${form}</div><div style="margin-top:18px">${lista}</div></div></div>`;
+  document.body.style.overflow = "hidden";
+  const nuevo = document.querySelector("#extra .sheet"); if (prev) nuevo.style.animation = "none";
+  if (prev && !ed) nuevo.scrollTop = prev.scrollTop;
 }
 
 /* ---------- eventos (delegados) ---------- */
@@ -496,27 +678,65 @@ function irA(tab) {
   if (tab === "panel") cargarPanel();
 }
 document.addEventListener("click", async e => {
-  const t = e.target.closest("[data-tab],[data-open],[data-est],[data-area],[data-act]"); if (!t) return;
-  if (t.dataset.tab) return irA(t.dataset.tab);
-  if (t.dataset.open) return abrirDetalle(t.dataset.open);
-  if (t.dataset.area) {
-    const l = state.cat.lugares.find(x => String(x.id_lugar) === t.dataset.area);
+  const t = e.target.closest("[data-tab],[data-open],[data-est],[data-area],[data-apoyo],[data-aviso],[data-act]"); if (!t) return;
+  const d = t.dataset;
+  if (d.tab) return irA(d.tab);
+  if (d.open) return abrirDetalle(d.open);
+  if (d.area) {
+    const l = state.cat.lugares.find(x => String(x.id_lugar) === d.area);
     state.areaSel = {id: l.id_lugar, nombre: l.nombre, grupo: l.grupo};
     const h = document.querySelector("[name=id_lugar]"); if (h) h.value = l.id_lugar;
     const b = $("#areaBtn"); if (b) b.innerHTML = areaBtn();
-    return cerrarPicker();
+    cerrarPicker(); return cargarSimilares();
   }
-  if (t.dataset.est) { state.f.estado = String(state.f.estado) === t.dataset.est ? "" : t.dataset.est; return refreshList(); }
-  switch (t.dataset.act) {
-    case "auth-login": case "auth-registro": state.authMode = t.dataset.act.slice(5); return render();
+  if (d.apoyo) {
+    try {
+      const r = await api(`/reportes/${d.apoyo}/apoyo`, {method:"POST"});
+      const s = state.sim.find(x => x.id_reporte === +d.apoyo); if (s) { s.apoyos = r.apoyos; s.yo_apoyo = r.yo_apoyo; }
+      $("#simBox").innerHTML = simHTML(); toast(r.yo_apoyo ? "Te sumaste a ese reporte" : "Quitaste tu apoyo");
+    } catch (x) { toast(x.message); }
+    return;
+  }
+  if (d.aviso) {
+    api("/avisos/leer", {method:"POST", body:{id:+d.aviso}}).then(cargarAvisos).catch(() => {});
+    cerrarExtra(); if (d.rep) abrirDetalle(d.rep); return;
+  }
+  if (d.est) { state.f.estado = String(state.f.estado) === d.est ? "" : d.est; return refreshList(); }
+  switch (d.act) {
+    case "auth-login": case "auth-registro": state.authMode = d.act.slice(5); return render();
     case "close": return cerrarDetalle();
     case "pick-area": return abrirPicker();
     case "close-picker": return cerrarPicker();
     case "clear": state.f = {estado:"", prioridad:"", q:""}; return render();
     case "nuevo": return irA("nuevo");
+    case "avisos": return abrirAvisos();
+    case "close-extra": return cerrarExtra();
+    case "leer-todo": try { await api("/avisos/leer", {method:"POST", body:{}}); } catch {} return abrirAvisos();
+    case "enviar-cola": return enviarCola();
+    case "exp-xlsx": case "exp-pdf": {
+      const q = new URLSearchParams(); const a = $("#expDesde").value, b = $("#expHasta").value;
+      if (a) q.set("desde", a); if (b) q.set("hasta", b);
+      const link = document.createElement("a"); link.href = "/api/informe." + d.act.slice(4) + (q.toString() ? "?" + q : ""); link.download = "";
+      document.body.appendChild(link); link.click(); link.remove(); return;
+    }
+    case "gest-enc": return gestEnc();
+    case "gest-areas": return gestAreas();
+    case "gest-cancel": state.gest.edit = null; return pintarGest();
+    case "gest-edit": state.gest.edit = +d.id; pintarGest(); return void ($("#extra .sheet").scrollTop = 0);
+    case "gest-del": {
+      if (!confirm("¿Seguro que quieres borrarlo?")) return;
+      const enc = state.gest.tipo === "enc";
+      try {
+        await api((enc ? "/admin/encargados/" : "/admin/lugares/") + d.id, {method:"DELETE"});
+        if (enc) state.gest.lista = await api("/admin/encargados");
+        await refrescarCatalogo(); pintarGest(); toast("Borrado");
+      } catch (x) { toast(x.message); }
+      return;
+    }
     case "logout":
       try { await api("/logout", {method:"POST"}); } catch {}
-      Object.assign(state, {areaSel:null, user:null, all:[], stats:null, historial:[], f:{estado:"",prioridad:"",q:""}, foto:null});
+      Object.assign(state, {areaSel:null, user:null, all:[], stats:null, historial:[], f:{estado:"",prioridad:"",q:""}, foto:null, avisos:{no_leidos:0, items:[]}});
+      LS.set("pr_cache", null); LS.set("pr_all", []);
       return render();
   }
 });
@@ -525,10 +745,13 @@ document.addEventListener("input", e => {
   if (e.target.id === "q") { clearTimeout(e.target.t); e.target.t = setTimeout(() => { state.f.q = e.target.value.trim(); refreshList(); }, 150); }
 });
 document.addEventListener("change", async e => {
-  if (e.target.name === "id_categoria") $("#probBox").innerHTML = probChips(e.target.value);
+  if (e.target.name === "id_categoria") { $("#probBox").innerHTML = probChips(e.target.value); cargarSimilares(); }
   if (e.target.id === "fp") { state.f.prioridad = e.target.value; refreshList(); }
   if (e.target.id === "foto" && e.target.files[0]) {
     try { state.foto = await reducirImagen(e.target.files[0]); $("#fotoBox").innerHTML = fotoBox(); } catch (x) { toast(x.message); }
+  }
+  if (e.target.id === "fotoDespues" && e.target.files[0]) {
+    try { state.fotoDespues = await reducirImagen(e.target.files[0]); $("#fotoDBox").innerHTML = fotoDBox(); } catch (x) { toast(x.message); }
   }
 });
 document.addEventListener("submit", async e => {
@@ -537,36 +760,69 @@ document.addEventListener("submit", async e => {
   if (f.id === "authForm") {
     const reg = state.authMode === "registro"; btn.disabled = true;
     try { state.user = await api(reg ? "/registro" : "/login", {method:"POST", body:d}); await boot(); }
-    catch (x) { $("#authErr").textContent = x.message; btn.disabled = false; }
+    catch (x) { $("#authErr").textContent = x.offline ? "Necesitas conexión para iniciar sesión." : x.message; btn.disabled = false; }
   }
   if (f.id === "nuevoForm") {
     const er = $("#nErr");
     if (d.descripcion.trim().length < 5) return er.textContent = "Cuéntanos qué pasó (mínimo 5 letras).";
     if (!d.id_lugar) return er.textContent = "Elige dónde está el problema.";
     if (!d.id_categoria) return er.textContent = "Elige el tipo de problema.";
+    const body = {descripcion:d.descripcion, id_lugar:+d.id_lugar, id_categoria:+d.id_categoria, prioridad:d.prioridad, foto:state.foto,
+                  problema:d.problema || null, curso:(d.curso || "").trim() || null};
     btn.disabled = true;
-    try {
-      await api("/reportes", {method:"POST", body:{descripcion:d.descripcion, id_lugar:+d.id_lugar, id_categoria:+d.id_categoria, prioridad:d.prioridad, foto:state.foto, problema:d.problema || null, curso:(d.curso || "").trim() || null}});
-      try { localStorage.setItem("pr_curso", (d.curso || "").trim()); } catch {}
-      state.foto = null; state.areaSel = null; state.f = {estado:"",prioridad:"",q:""}; toast("Reporte enviado"); irA("reportes");
-    } catch (x) { er.textContent = x.message; btn.disabled = false; }
+    const terminar = msg => { try { localStorage.setItem("pr_curso", (d.curso || "").trim()); } catch {}
+      state.foto = null; state.areaSel = null; state.sim = []; state.f = {estado:"",prioridad:"",q:""}; toast(msg); irA("reportes"); };
+    try { await api("/reportes", {method:"POST", body}); terminar("Reporte enviado"); }
+    catch (x) {
+      if (x.offline) { LS.set("pr_cola", [...cola(), {id: Date.now(), body}]); terminar("Sin conexión: guardado, se enviará solo"); }
+      else { er.textContent = x.message; btn.disabled = false; }
+    }
   }
   if (f.id === "editForm") {
     const {id, admin} = state.detalle, body = {id_estado: +d.id_estado};
     if (admin) { body.prioridad = d.prioridad; if (d.id_encargado) body.id_encargado = +d.id_encargado; }
+    if (state.fotoDespues) body.foto_despues = state.fotoDespues;
+    btn.disabled = true;
     try { await api("/reportes/" + id, {method:"PATCH", body}); cerrarDetalle(); toast("Cambios guardados"); await cargarReportes(); if (admin) cargarPanel(); }
-    catch (x) { $("#eErr").textContent = x.message; }
+    catch (x) { $("#eErr").textContent = x.message; btn.disabled = false; }
+  }
+  if (f.id === "comentForm") {
+    if (!d.texto.trim()) return;
+    btn.disabled = true;
+    try { await api(`/reportes/${state.detalle.id}/comentarios`, {method:"POST", body:{texto:d.texto}}); await abrirDetalle(state.detalle.id); }
+    catch (x) { toast(x.message); btn.disabled = false; }
+  }
+  if (f.id === "encForm" || f.id === "areaForm") {
+    const enc = f.id === "encForm", g = state.gest; btn.disabled = true;
+    try {
+      const base = enc ? "/admin/encargados" : "/admin/lugares";
+      if (g.edit) await api(base + "/" + g.edit, {method:"PATCH", body:d}); else await api(base, {method:"POST", body:d});
+      g.edit = null; if (enc) g.lista = await api("/admin/encargados");
+      await refrescarCatalogo(); pintarGest(); toast("Guardado");
+    } catch (x) { $("#gErr").textContent = x.message; btn.disabled = false; }
   }
 });
-document.addEventListener("visibilitychange", () => { if (!document.hidden && state.user && state.tab === "reportes") cargarReportes(); });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden || !state.user) return;
+  if (state.tab === "reportes" && !state.detalle) cargarReportes();
+  enviarCola(); sondeo();
+});
+window.addEventListener("online", () => { if (state.user) { enviarCola(); if (state.tab === "reportes") cargarReportes(); } });
 
 /* ---------- arranque ---------- */
 async function boot() {
   try {
     if (!state.user) state.user = await api("/yo");
     state.cat = await api("/catalogos");
-    state.tab = "reportes"; state.loading = true; render(); await cargarReportes();
-  } catch { state.user = null; render(); }
+    LS.set("pr_cache", {user: state.user, cat: state.cat});
+    state.tab = "reportes"; state.loading = true; render();
+    await cargarReportes(); enviarCola(); cargarAvisos();
+    clearInterval(boot.t); boot.t = setInterval(sondeo, 30000);
+  } catch (e) {
+    const c = e.offline && LS.get("pr_cache", null);
+    if (c) { state.user = c.user; state.cat = c.cat; state.all = LS.get("pr_all", []); state.tab = "reportes"; render(); }
+    else { state.user = null; render(); }
+  }
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 boot();

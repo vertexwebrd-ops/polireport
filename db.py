@@ -98,6 +98,7 @@ def init_db(app):
     add_column(db, "lugares", "grupo", "TEXT")
     add_column(db, "reportes", "curso", "TEXT")
     add_column(db, "reportes", "problema", "TEXT")
+    add_column(db, "reportes", "foto_despues", "TEXT")
     db.commit()
 
     if db.execute("SELECT COUNT(*) AS n FROM estados").fetchone()["n"] == 0:
@@ -115,5 +116,9 @@ def init_db(app):
             db.execute("INSERT INTO usuarios(nombre, correo, password_hash, rol, id_encargado) VALUES (?,?,?,?,?)",
                        (nombre, correo, h(pw), rol, enc))
         db.commit()
-    sync_catalogos(db)
+    # El catálogo base se carga una sola vez: después el administrador lo gestiona desde la app
+    if not db.execute("SELECT 1 FROM ajustes WHERE clave='catalogo_v2'").fetchone():
+        sync_catalogos(db)
+        db.execute("INSERT INTO ajustes(clave, valor) VALUES ('catalogo_v2', '1')")
+        db.commit()
     db.close()

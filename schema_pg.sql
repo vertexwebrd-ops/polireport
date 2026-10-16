@@ -36,8 +36,34 @@ CREATE TABLE IF NOT EXISTS reportes (
   fecha TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc','YYYY-MM-DD HH24:MI:SS')),
   fecha_resuelto TEXT,
   foto TEXT,
+  foto_despues TEXT,
   curso TEXT,
   problema TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_rep_estado ON reportes(id_estado);
 CREATE INDEX IF NOT EXISTS idx_rep_usuario ON reportes(id_usuario);
+
+CREATE TABLE IF NOT EXISTS eventos (
+  id_evento SERIAL PRIMARY KEY,
+  id_reporte INTEGER NOT NULL REFERENCES reportes(id_reporte) ON DELETE CASCADE,
+  id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+  tipo TEXT NOT NULL,
+  texto TEXT NOT NULL,
+  fecha TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc','YYYY-MM-DD HH24:MI:SS'))
+);
+CREATE TABLE IF NOT EXISTS avisos (
+  id_aviso SERIAL PRIMARY KEY,
+  id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  id_reporte INTEGER REFERENCES reportes(id_reporte) ON DELETE CASCADE,
+  texto TEXT NOT NULL,
+  leido INTEGER NOT NULL DEFAULT 0,
+  fecha TEXT NOT NULL DEFAULT (to_char(now() at time zone 'utc','YYYY-MM-DD HH24:MI:SS'))
+);
+CREATE TABLE IF NOT EXISTS apoyos (
+  id_reporte INTEGER NOT NULL REFERENCES reportes(id_reporte) ON DELETE CASCADE,
+  id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+  PRIMARY KEY (id_reporte, id_usuario)
+);
+CREATE TABLE IF NOT EXISTS ajustes (clave TEXT PRIMARY KEY, valor TEXT);
+CREATE INDEX IF NOT EXISTS idx_eventos_reporte ON eventos(id_reporte);
+CREATE INDEX IF NOT EXISTS idx_avisos_usuario ON avisos(id_usuario, leido);

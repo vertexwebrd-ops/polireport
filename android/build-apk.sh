@@ -19,6 +19,40 @@ npx cap add android
 sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n</manifest>#' \
   android/app/src/main/AndroidManifest.xml
 
+# descarga de informes (Excel/PDF) dentro de la app
+mkdir -p android/app/src/main/java/com/polireport/app
+cat > android/app/src/main/java/com/polireport/app/MainActivity.java <<'JAVA'
+package com.polireport.app;
+
+import android.app.DownloadManager;
+import android.content.Context;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.webkit.CookieManager;
+import android.webkit.URLUtil;
+import android.widget.Toast;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getBridge().getWebView().setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+            String name = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            DownloadManager.Request r = new DownloadManager.Request(Uri.parse(url));
+            r.addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url));
+            r.setMimeType(mimeType);
+            r.setTitle(name);
+            r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
+            ((DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(r);
+            Toast.makeText(this, "Descargando " + name, Toast.LENGTH_SHORT).show();
+        });
+    }
+}
+JAVA
+
 # ícono propio
 pip install -q pillow
 python3 - <<'PY'
